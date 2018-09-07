@@ -1,5 +1,6 @@
 import logging
 import requests
+import time
 from lxml import html
 
 logger = logging.getLogger(__name__)
@@ -17,20 +18,20 @@ class Scrapper(object):
         # Here is an example for you
         url = 'https://kinokopilka.tv'
         response = requests.get(url, verify=False)
-        tree = html.fromstring(response.text)
-        films_urls = []
-        for div_node in tree.xpath('//div[@class="movie"]'):
-            films_urls.append(f"{url}{div_node.xpath('.//a/@href')[0]}")
+        html_page = html.fromstring(response.text)
+        for div_node in html_page.xpath('//div[@class="movie"]'):
+            film_url = f"{url}{div_node.xpath('.//a/@href')[0]}"
+            response = requests.get(film_url, verify=False)
+            data = response.text
+            while '\n' in data:
+                data.replace('\n', ' ')
+            # storage.append_data(["".join(data.split('\n'))])
+                storage.append_data([data])
+            del film_url
+            del response
+            del data
+            time.sleep(0.3)
+
+        del html_page
 
 
-        # if not response.ok:
-        #     logger.error(response.text)
-        #     # then continue process, or retry, or fix your code
-        #
-        # else:
-        #     # Note: here json can be used as response.json
-        #     data = response.text
-        #
-        #     # save scrapped objects here
-        #     # you can save url to identify already scrapped objects
-        #     storage.write_data([url + '\t' + data.replace('\n', '')])

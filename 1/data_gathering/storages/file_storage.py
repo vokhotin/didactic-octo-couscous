@@ -1,5 +1,5 @@
 import os
-
+import json
 from storages.storage import Storage
 
 
@@ -7,6 +7,11 @@ class FileStorage(Storage):
 
     def __init__(self, file_name):
         self.file_name = file_name
+
+    def read_json(self):
+        if not os.path.exists(self.file_name):
+            raise StopIteration
+        return json.load(self.file_name)
 
     def read_data(self):
         if not os.path.exists(self.file_name):
