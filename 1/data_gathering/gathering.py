@@ -121,9 +121,8 @@ pep8 .
 """
 
 import logging
-
 import sys
-
+import pandas as pd
 from scrappers.scrapper import Scrapper
 from storages.file_storage import FileStorage
 from transformers.transformer import Transformer
@@ -149,20 +148,59 @@ def convert_data_to_table_format():
     logger.info("transform")
     t = Transformer()
     raw_file = FileStorage(SCRAPPED_FILE)
+    table_data = FileStorage(TABLE_FORMAT_FILE)
+    table_data.write_data(['{};{};{};{};{};{};{};{};{};{};{};{};{}'.
+                          format(
+                                    'Название',
+                                    'Стоимость',
+                                    'Город',
+                                    'Описание',
+                                    'Услуга',
+                                    'Среднемесячная выручка',
+                                    'Среднемесячные расходы',
+                                    'Действующий бизнес',
+                                    'Возраст бизнеса',
+                                    'Количество сотрудников',
+                                    'Организационно-правовая форма',
+                                    'Доля к продаже',
+                                    'Причина продажи'
+                                 )])
+    html_string = ""
+    onPage = False
     for line in raw_file.read_data():
-        print (line)
-        t.transform_process(line)
-        break
+        if line == 'end_page':
+            parsedData = t.transform_process(html_string)
+            table_data.append_data(['{};{};{};{};{};{};{};{};{};{};{};{};{}'.
+                                  format(
+                                            parsedData.get('Название', ''),
+                                            parsedData.get('Стоимость', ''),
+                                            parsedData.get('Город', ''),
+                                            parsedData.get('Описание', ''),
+                                            parsedData.get('Услуга', ''),
+                                            parsedData.get('Среднемесячная выручка', ''),
+                                            parsedData.get('Среднемесячные расходы', ''),
+                                            parsedData.get('Действующий бизнес', ''),
+                                            parsedData.get('Возраст бизнеса', ''),
+                                            parsedData.get('Количество сотрудников', ''),
+                                            parsedData.get('Организационно-правовая форма', ''),
+                                            parsedData.get('Доля к продаже', ''),
+                                            parsedData.get('Причина продажи', '')
+            )])
 
-
+            onPage = False
+            html_string = ""
+        if onPage:
+            html_string += line
+        if line == 'start_page':
+            onPage = True
 
 def stats_of_data():
     logger.info("stats")
-
-    # Your code here
-    # Load pandas DataFrame and print to stdout different statistics about the data.
-    # Try to think about the data and use not only describe and info.
-    # Ask yourself what would you like to know about this data (most frequent word, or something else)
+    df_business = pd.read_csv(TABLE_FORMAT_FILE, sep=';')
+    print ("Бизнес с максимальной ценой:\n{}".format(
+        df_business[df_business['Стоимость'] == df_business['Стоимость'].max()][['Название','Стоимость', 'Город']]))
+    df_business['Окупаемость'] = df_business['Стоимость']/(df_business['Среднемесячная выручка'] - df_business['Среднемесячные расходы'])
+    print (df_business[['Услуга', 'Город', 'Окупаемость']])
 
 
 if __name__ == '__main__':
